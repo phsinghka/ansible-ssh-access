@@ -1,0 +1,41 @@
+---
+- name: Ensure the .ssh directory exists
+  file:
+    path: /home/ubuntu/.ssh
+    state: directory
+    mode: '0700'
+
+- name: Add authorized keys for users
+  authorized_key:
+    user: ubuntu
+    key: "{{ lookup('file', 'files/worker_node.pub') }}"
+    state: present
+
+- name: Manage known hosts
+  known_hosts:
+    path: /home/ubuntu/.ssh/known_hosts
+    name: "{{item}}"
+    key: "{{ lookup('pipe', 'ssh-keyscan -H {{ item }}') }}"
+  with_items:
+    - w1  # worker node 1
+    - w2  # worker node 2
+    - w3  # worker node 3
+- name: Ensure correct permissions for authorized_keys
+  file:
+    path: /home/ubuntu/.ssh/authorized_keys
+    mode: '0600'
+
+- name: Configure SSH Daemon
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin no'
+  notify: Restart SSH
+
+- name: Disable Password Authentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+  notify: Restart SSH
+

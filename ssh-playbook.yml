@@ -1,0 +1,7 @@
+---
+
+- name: Configure SSH Access on Server
+  hosts: all
+  become: yes
+  roles:
+    - ssh
